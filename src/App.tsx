@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
 import { 
   ArrowUpRight, 
   ChevronRight, 
@@ -24,8 +24,47 @@ import {
   MousePointer2,
   TrendingUp
 } from 'lucide-react';
-import { PROJECTS, EXPERIENCES, SERVICES, TOOL_CATEGORIES } from './constants';
-import { Project, Service } from './types';
+import { PROJECTS, EXPERIENCES, SERVICES, TOOL_CATEGORIES, PROCESS, TESTIMONIALS } from './constants';
+import { Project, Service, Testimonial } from './types';
+
+const CustomCursor = () => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setPosition({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseOver = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).tagName === 'A' || (e.target as HTMLElement).tagName === 'BUTTON') {
+        setIsHovering(true);
+      } else {
+        setIsHovering(false);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseover', handleMouseOver);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseover', handleMouseOver);
+    };
+  }, []);
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 w-8 h-8 rounded-full border border-accent pointer-events-none z-[9999] hidden md:block"
+      animate={{
+        x: position.x - 16,
+        y: position.y - 16,
+        scale: isHovering ? 2 : 1,
+        backgroundColor: isHovering ? 'rgba(255, 0, 0, 0.1)' : 'transparent',
+      }}
+      transition={{ type: 'spring', damping: 25, stiffness: 250, mass: 0.5 }}
+    />
+  );
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,8 +78,9 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Work', href: '#work' },
-    { name: 'About', href: '#about' },
+    { name: 'Process', href: '#process' },
     { name: 'Services', href: '#services' },
+    { name: 'About', href: '#about' },
     { name: 'Contact', href: '#contact' },
   ];
 
@@ -115,19 +155,29 @@ const Hero = () => {
           </span>
         </div>
         <h1 className="text-6xl md:text-9xl font-bold leading-[0.85] mb-12 text-gradient">
-          Building <br />
-          <span className="text-white">Growth Engines</span>
+          I Engineer <br />
+          <span className="text-white">Growth Engines.</span>
         </h1>
         <p className="text-xl md:text-2xl text-text-muted max-w-2xl mb-16 leading-relaxed font-light">
-          I engineer high-performance marketing systems that turn complex ideas into measurable revenue growth.
+          Strategic digital marketing for brands that demand measurable ROI. No vanity metrics, just growth.
         </p>
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-6 mb-16">
           <a href="#work" className="btn-primary">
             View Selected Work <ArrowUpRight size={16} />
           </a>
           <a href="#contact" className="btn-secondary">
-            Let's Talk
+            Hire Me
           </a>
+        </div>
+        <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.2em] font-bold text-white/40">
+          <div className="flex -space-x-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-8 h-8 rounded-full border-2 border-bg bg-surface flex items-center justify-center text-[8px]">
+                {i}
+              </div>
+            ))}
+          </div>
+          <span>Trusted by 10+ Global Brands</span>
         </div>
       </motion.div>
     </section>
@@ -147,22 +197,26 @@ const About = () => {
         </div>
         <div className="space-y-12">
           <p className="text-2xl md:text-3xl text-white leading-snug font-light">
-            I’m Shanveel Rahman, a growth strategist dedicated to engineering marketing systems that actually work. 
-          </p>
-          <p className="text-lg text-text-muted leading-relaxed">
-            I focus on high-impact strategies—whether it’s scaling a brand’s reach, dominating search results, or engineering conversion funnels. My approach is rooted in clarity, data, and relentless optimization. I don't just build campaigns; I build sustainable growth engines.
+            I bridge the gap between creative ideas and commercial success. By combining data-driven SEO with high-performance marketing, I build systems that don't just reach people—they convert them. Simple strategies, engineered for impact.
           </p>
           
           <div className="pt-12 border-t border-white/10">
-            <div className="flex items-center gap-8">
-              <div>
-                <div className="text-5xl font-bold mb-2">10+</div>
-                <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Global Clients</div>
-              </div>
-              <div className="h-12 w-[1px] bg-white/10" />
+            <div className="grid grid-cols-2 gap-12">
               <div>
                 <div className="text-5xl font-bold mb-2">3x</div>
                 <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Avg. ROAS</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold mb-2">+120%</div>
+                <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Traffic Growth</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold mb-2">+40%</div>
+                <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Conversion Increase</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold mb-2">10+</div>
+                <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Global Clients</div>
               </div>
             </div>
           </div>
@@ -178,17 +232,23 @@ interface ServiceBlockProps {
 }
 
 const ServiceBlock: React.FC<ServiceBlockProps> = ({ service, index }) => (
-  <div className="group py-12 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-8 hover:bg-white/[0.02] transition-colors px-4">
-    <div className="flex items-center gap-8">
-      <span className="text-text-muted font-display text-sm">0{index + 1}</span>
+  <div className="group py-12 border-b border-white/10 flex flex-col md:flex-row md:items-start justify-between gap-8 hover:bg-white/[0.02] transition-colors px-4">
+    <div className="flex items-start gap-8">
+      <span className="text-text-muted font-display text-sm mt-2">0{index + 1}</span>
       <div>
         <h3 className="text-3xl font-bold group-hover:text-accent transition-colors">{service.title}</h3>
         <p className="text-text-muted mt-2 max-w-md">{service.description}</p>
       </div>
     </div>
-    <div className="text-right">
-      <span className="text-[10px] uppercase tracking-widest font-bold text-accent block mb-2">Outcome</span>
-      <p className="text-white font-medium">{service.outcome}</p>
+    <div className="grid grid-cols-2 gap-12 md:text-right">
+      <div>
+        <span className="text-[10px] uppercase tracking-widest font-bold text-accent block mb-2">Outcome</span>
+        <p className="text-white font-medium text-sm">{service.outcome}</p>
+      </div>
+      <div>
+        <span className="text-[10px] uppercase tracking-widest font-bold text-white/20 block mb-2">Business Impact</span>
+        <p className="text-text-muted text-sm">{service.impact}</p>
+      </div>
     </div>
   </div>
 );
@@ -297,8 +357,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 };
 
 export default function App() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   return (
-    <div className="relative">
+    <div className="relative bg-bg overflow-x-hidden">
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 bg-accent origin-left z-[10001]"
+        style={{ scaleX }}
+      />
+      <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <CustomCursor />
       <Navbar />
       
       <main>
@@ -352,6 +425,41 @@ export default function App() {
           </div>
         </section>
 
+        <section id="process" className="py-32 px-6 max-w-7xl mx-auto border-t border-white/10">
+          <div className="grid lg:grid-cols-4 gap-12">
+            {PROCESS.map((p, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="space-y-6"
+              >
+                <div className="text-accent font-display text-4xl font-bold opacity-20">{p.step}</div>
+                <h3 className="text-2xl font-bold">{p.title}</h3>
+                <p className="text-text-muted leading-relaxed text-sm">{p.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        <section className="py-32 px-6 max-w-7xl mx-auto border-t border-white/10">
+          <div className="grid md:grid-cols-3 gap-12">
+            {TESTIMONIALS.map((t, i) => (
+              <div key={i} className="p-12 bg-surface border border-white/5 relative">
+                <div className="text-accent text-6xl font-serif absolute top-8 left-8 opacity-10">"</div>
+                <p className="text-lg text-white mb-12 italic leading-relaxed relative z-10">
+                  {t.quote}
+                </p>
+                <div>
+                  <div className="font-bold text-white">{t.author}</div>
+                  <div className="text-[10px] uppercase tracking-widest font-bold text-text-muted">{t.position}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section id="work" className="py-32 px-6 max-w-7xl mx-auto border-t border-white/10">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-8">
             <div>
@@ -369,6 +477,35 @@ export default function App() {
           </div>
         </section>
 
+        <section id="experience" className="py-32 px-6 max-w-7xl mx-auto border-t border-white/10">
+          <div className="grid md:grid-cols-3 gap-20">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-accent mb-8 block">Experience</span>
+              <h2 className="text-4xl md:text-6xl font-bold">Track Record</h2>
+            </div>
+            <div className="md:col-span-2 space-y-20">
+              {EXPERIENCES.map((exp, i) => (
+                <div key={i} className="relative pl-12 border-l border-white/10">
+                  <div className="absolute top-0 left-[-5px] w-[10px] h-[10px] bg-accent" />
+                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-2">
+                    <h3 className="text-2xl font-bold">{exp.role}</h3>
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-text-muted">{exp.period}</span>
+                  </div>
+                  <h4 className="text-accent font-bold text-sm mb-6 uppercase tracking-widest">{exp.company}</h4>
+                  <ul className="space-y-4">
+                    {exp.achievements.map((ach, j) => (
+                      <li key={j} className="text-text-muted flex gap-4 text-sm leading-relaxed">
+                        <span className="text-accent mt-1.5">•</span>
+                        {ach}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section id="contact" className="py-32 px-6 max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0 }}
@@ -378,8 +515,8 @@ export default function App() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-accent" />
             <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-accent mb-12 block">Final Call</span>
             <h2 className="text-5xl md:text-9xl font-bold mb-16 tracking-tighter leading-none">
-              Let's build your <br />
-              <span className="text-white/20 italic">growth engine.</span>
+              Let's build something <br />
+              <span className="text-white/20 italic">that actually converts.</span>
             </h2>
             <p className="text-xl md:text-2xl text-text-muted max-w-2xl mx-auto mb-20 font-light">
               Ready to scale your brand with data-driven strategies? Let’s connect and engineer your next success story.

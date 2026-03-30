@@ -36,6 +36,7 @@ export interface Service {
   title: string;
   description: string;
   outcome: string;
+  impact: string;
 }
 
 export interface ToolCategory {
